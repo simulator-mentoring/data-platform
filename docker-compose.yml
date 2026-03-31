@@ -1,0 +1,140 @@
+version: "3.8"
+
+# =============================================
+# BigTech Mentoring — Student Local Setup
+# Airflow + Superset + Local PG (metadata only)
+# Требования: 8GB+ RAM
+# =============================================
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.3-python3.11
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@local-postgres:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+    AIRFLOW__WEBSERVER__SECRET_KEY: 'mentoring-secret-key-change-me'
+    # Connection to remote server database
+    AIRFLOW__CONN__MENTORING_DB: postgresql://${REMOTE_DB_USER:-student}:${REMOTE_DB_PASSWORD:-student_password_CHANGE_ME}@${REMOTE_DB_HOST:-YOUR_SERVER_IP}:${REMOTE_DB_PORT:-6432}/${REMOTE_DB_NAME:-mentoring_db}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+  depends_on:
+    local-postgres:
+      condition: service_healthy
+
+services:
+
+  # ---- Local PostgreSQL (metadata only) ----
+  local-postgres:
+    image: postgres:16-alpine
+    container_name: airflow-metadata-pg
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - local_pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---- Airflow Init (runs once) ----
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+        echo "Airflow initialized!"
+    restart: "no"
+
+  # ---- Airflow Webserver ----
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: airflow webserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # ---- Airflow Scheduler ----
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: airflow scheduler
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # ---- Superset ----
+  superset:
+    image: apache/superset:3.1.3
+    container_name: superset
+    environment:
+      SUPERSET_SECRET_KEY: 'mentoring-superset-secret-change-me'
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      ADMIN_FIRST_NAME: Admin
+      ADMIN_LAST_NAME: User
+      ADMIN_EMAIL: admin@example.com
+      # Connect to remote server database for analytics
+      SQLALCHEMY_DATABASE_URI: sqlite:////app/superset_home/superset.db
+    volumes:
+      - superset_data:/app/superset_home
+      - ./superset-init.sh:/docker-entrypoint-initdb.d/init.sh
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+    command: >
+      bash -c "
+        superset db upgrade &&
+        superset fab create-admin \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --email admin@example.com \
+          --password admin || true &&
+        superset init &&
+        superset run -h 0.0.0.0 -p 8088
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+volumes:
+  local_pg_data:
+    driver: local
+  superset_data:
+    driver: local
