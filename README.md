@@ -1,6 +1,5 @@
-# BigTech Mentoring — Data Platform
 
-Учебная среда, имитирующая стек дата-инженера в Big Tech компании. Всё работает локально в Docker.
+Учебная среда, имитирующая стек продуктового аналитика / дата аналитика в Big Tech компании. Всё работает локально в Docker.
 
 ## Стек
 
@@ -31,7 +30,6 @@
 ### 1. Установите Docker Desktop
 
 - **Mac/Windows:** https://www.docker.com/products/docker-desktop/
-- **Linux:** `curl -fsSL https://get.docker.com | sh`
 
 ### 2. Клонируйте и запустите
 
@@ -123,7 +121,7 @@ student/
 
 ---
 
-## Troubleshooting
+## Самые частые проблемы
 
 ### "Port already in use"
 ```bash
