@@ -1,0 +1,192 @@
+# =============================================
+# BigTech Mentoring — All-in-One Local Setup
+# PostgreSQL + PgBouncer + Airflow + Superset
+# Requirements: Docker Desktop, 8GB+ RAM
+# =============================================
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.3-python3.11
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-metadata:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+    AIRFLOW__WEBSERVER__SECRET_KEY: 'mentoring-secret-key-change-me'
+    # Connection to local mentoring database via PgBouncer
+    AIRFLOW__CONN__MENTORING_DB: postgresql://${POSTGRES_USER:-mentor_admin}:${POSTGRES_PASSWORD:-mentor_secret_2024}@pgbouncer:5432/${POSTGRES_DB:-mentoring_db}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+  depends_on:
+    airflow-metadata:
+      condition: service_healthy
+    pgbouncer:
+      condition: service_started
+
+services:
+
+  # ---- Main PostgreSQL (shared data + sandbox) ----
+  postgres:
+    image: postgres:16-alpine
+    container_name: mentoring-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mentor_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentor_secret_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-mentoring_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mentor_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---- PgBouncer (connection pooling) ----
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: mentoring-pgbouncer
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-mentor_admin}:${POSTGRES_PASSWORD:-mentor_secret_2024}@postgres:5432/${POSTGRES_DB:-mentoring_db}
+      MAX_CLIENT_CONN: 100
+      DEFAULT_POOL_SIZE: 10
+      MIN_POOL_SIZE: 2
+      RESERVE_POOL_SIZE: 3
+      POOL_MODE: transaction
+      AUTH_TYPE: plain
+    ports:
+      - "127.0.0.1:6432:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ---- Airflow Metadata PostgreSQL ----
+  airflow-metadata:
+    image: postgres:16-alpine
+    container_name: airflow-metadata-pg
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_metadata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---- Airflow Init (runs once) ----
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+        echo "Airflow initialized!"
+    restart: "no"
+
+  # ---- Airflow Webserver ----
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: airflow webserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # ---- Airflow Scheduler ----
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: airflow scheduler
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # ---- Superset ----
+  superset:
+    image: apache/superset:3.1.3
+    container_name: superset
+    environment:
+      SUPERSET_SECRET_KEY: 'mentoring-superset-secret-change-me'
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      ADMIN_FIRST_NAME: Admin
+      ADMIN_LAST_NAME: User
+      ADMIN_EMAIL: admin@example.com
+      SQLALCHEMY_DATABASE_URI: sqlite:////app/superset_home/superset.db
+    volumes:
+      - superset_data:/app/superset_home
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+    depends_on:
+      pgbouncer:
+        condition: service_started
+    command: >
+      bash -c "
+        superset db upgrade &&
+        superset fab create-admin \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --email admin@example.com \
+          --password admin || true &&
+        superset init &&
+        superset run -h 0.0.0.0 -p 8088
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+volumes:
+  postgres_data:
+    driver: local
+  airflow_metadata:
+    driver: local
+  superset_data:
+    driver: local

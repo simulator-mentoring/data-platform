@@ -1,0 +1,81 @@
+# Task 3: Создание таблицы daily_metrics
+
+## Цель
+Создать свою таблицу в схеме `sandbox` и заполнить её агрегированными данными по дням.
+Это типичная задача дата-инженера: построить витрину данных (data mart).
+
+---
+
+## Что такое sandbox?
+
+`sandbox` — это схема, в которой вы можете создавать свои таблицы. Данные в `shared_data` — только для чтения.
+
+---
+
+## Шаг 1: Откройте шаблон
+
+Откройте файл `templates/create_daily_metrics.sql` — в нём SQL с TODO-комментариями. Ваша задача — заполнить пропуски.
+
+---
+
+## Шаг 2: Создание таблицы
+
+Выполните в DataGrip CREATE TABLE из шаблона. Таблица `sandbox.daily_metrics` должна содержать:
+
+| Колонка | Тип | Описание |
+|---------|-----|----------|
+| report_date | DATE | Дата отчёта (PRIMARY KEY) |
+| total_users | INTEGER | Всего зарегистрированных пользователей на эту дату |
+| new_users | INTEGER | Новых пользователей за этот день |
+| total_events | INTEGER | Событий за день |
+| total_orders | INTEGER | Заказов за день |
+| total_revenue | DECIMAL(12,2) | Выручка за день (completed orders) |
+| avg_order_amount | DECIMAL(10,2) | Средний чек за день |
+| created_at | TIMESTAMP | Когда запись была создана |
+
+---
+
+## Шаг 3: Заполнение данными
+
+Напишите INSERT...SELECT, который заполнит таблицу данными за каждый день.
+
+Логика:
+- `total_users` — количество пользователей, зарегистрировавшихся **до конца** этого дня (кумулятивно)
+- `new_users` — зарегистрировавшиеся **именно в этот день**
+- `total_events` — события за этот день
+- `total_orders` — заказы за этот день
+- `total_revenue` — сумма amount заказов со статусом `completed` за этот день
+- `avg_order_amount` — средний amount за этот день
+
+**Подсказка:** используйте `generate_series` для создания списка дат и LEFT JOIN с агрегациями.
+
+---
+
+## Шаг 4: Проверка
+
+```sql
+SELECT * FROM sandbox.daily_metrics ORDER BY report_date LIMIT 20;
+```
+
+Вы должны увидеть строки с данными по дням. Проверьте:
+- Нет NULL-значений в числовых полях (должны быть 0)
+- `total_users` растёт от дня к дню
+- `total_revenue` > 0 для дней с заказами
+
+```sql
+SELECT
+    count(*) as total_days,
+    min(report_date) as first_date,
+    max(report_date) as last_date,
+    round(avg(total_revenue), 2) as avg_daily_revenue
+FROM sandbox.daily_metrics;
+```
+
+---
+
+## Чек-лист выполнения
+
+- [ ] Таблица `sandbox.daily_metrics` создана
+- [ ] Данные заполнены через INSERT...SELECT
+- [ ] Проверочные запросы возвращают корректные результаты
+- [ ] total_users растёт кумулятивно
