@@ -1,5 +1,23 @@
+Учебная среда, имитирующая стек продуктового аналитика / дата-аналитика в Big Tech компании. Всё работает локально в Docker.
 
-Учебная среда, имитирующая стек продуктового аналитика / дата аналитика в Big Tech компании. Всё работает локально в Docker.
+## Зачем всё это?
+
+Представьте: вы вышли на работу аналитиком данных в крупную IT-компанию. Первый день. Вам дают доступ к базе данных с миллионами строк, показывают дашборд, который обновляется каждое утро, и говорят: "Разберись, как это работает, и сделай новый отчёт".
+
+Именно это мы сейчас и будем делать — но в безопасной учебной среде.
+
+**Ваш путь в этом курсе:**
+
+1. **Подключиться к базе данных** — как это делают аналитики каждый день, открыв DataGrip или DBeaver
+2. **Написать SQL-запросы** — найти инсайты в данных о пользователях, заказах и событиях
+3. **Построить витрину данных** — создать таблицу с ежедневными метриками (revenue, новые пользователи, конверсия)
+4. **Автоматизировать расчёты** — написать пайплайн в Airflow, который обновляет витрину каждый день без вашего участия
+5. **Собрать дашборд** — визуализировать данные в Superset, чтобы бизнес видел красивые графики
+6. **Работать через Git** — код ревью, pull request'ы, ветки — как в настоящей команде
+
+В итоге у вас будет **полный цикл**: данные в базе → автоматический расчёт → дашборд, который обновляется сам. Это именно то, что делают аналитики и дата-инженеры в Яндексе, Тинькофф, Ozon и других компаниях.
+
+---
 
 ## Стек
 
@@ -69,13 +87,15 @@ docker compose ps
 
 Задания расположены в папке `tasks/` с нарастающей сложностью:
 
-| # | Файл | Тема |
-|---|------|------|
-| 1 | [task_01_setup.md](student/tasks/task_01_setup.md) | Установка и подключение |
-| 2 | [task_02_sql_explore.md](student/tasks/task_02_sql_explore.md) | Исследование данных через SQL |
-| 3 | [task_03_create_table.md](student/tasks/task_03_create_table.md) | Создание таблицы daily_metrics |
-| 4 | [task_04_airflow_dag.md](student/tasks/task_04_airflow_dag.md) | Написать DAG в Airflow |
-| 5 | [task_05_superset_dashboard.md](student/tasks/task_05_superset_dashboard.md) | Дашборд в Superset |
+| # | Файл | Тип | Тема |
+|---|------|-----|------|
+| 1 | [task_01_setup.md](student/tasks/task_01_setup.md) | Практика | Установка и подключение |
+| 2 | [task_02_sql_explore.md](student/tasks/task_02_sql_explore.md) | Практика | Исследование данных через SQL |
+| 3 | [task_03_create_table.md](student/tasks/task_03_create_table.md) | Практика | Создание таблицы daily_metrics |
+| - | [theory_airflow.md](student/tasks/theory_airflow.md) | Теория | Что такое Airflow и зачем он нужен |
+| 4 | [task_04_airflow_dag.md](student/tasks/task_04_airflow_dag.md) | Практика | Написать DAG в Airflow |
+| - | [theory_git.md](student/tasks/theory_git.md) | Теория | Git и GitHub: зачем и как |
+| 5 | [task_05_superset_dashboard.md](student/tasks/task_05_superset_dashboard.md) | Практика | Дашборд в Superset |
 
 Шаблоны с TODO для заданий 3 и 4 лежат в `templates/`.
 
@@ -110,7 +130,9 @@ student/
 │   ├── task_01_setup.md
 │   ├── task_02_sql_explore.md
 │   ├── task_03_create_table.md
+│   ├── theory_airflow.md    # Теория: зачем Airflow
 │   ├── task_04_airflow_dag.md
+│   ├── theory_git.md        # Теория: Git и GitHub
 │   └── task_05_superset_dashboard.md
 ├── templates/               # Шаблоны с TODO
 │   ├── create_daily_metrics.sql

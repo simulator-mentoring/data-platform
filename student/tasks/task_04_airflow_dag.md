@@ -1,5 +1,7 @@
 # Task 4: Написать DAG в Airflow
 
+> Перед этим заданием прочитайте [Теория: Airflow](theory_airflow.md) — там объясняется, зачем нужен Airflow и как он работает.
+
 ## Цель
 Написать DAG (Directed Acyclic Graph), который автоматически считает daily_metrics и загружает их в таблицу. Это основа работы дата-инженера в Big Tech.
 
@@ -86,6 +88,8 @@ LIMIT 10;
 ---
 
 ## Шаг 6: Git + Merge Request
+
+> Если вы раньше не работали с Git — прочитайте [Теория: Git и GitHub](theory_git.md).
 
 ```bash
 git checkout -b feature/daily-metrics-dag
