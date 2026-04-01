@@ -49,7 +49,7 @@
 
 - **Mac/Windows:** https://www.docker.com/products/docker-desktop/
 
-### 2. Клонируйте и запустите
+### 2. в терминале клонируйте и запустите
 
 ```bash
 git clone https://github.com/simulator-mentoring/data-platform.git
@@ -101,7 +101,7 @@ docker compose ps
 
 ---
 
-## Рабочий процесс (как в Big Tech)
+## Пример дня 
 
 ```
 1. git pull                    # Получить свежий код
@@ -109,8 +109,8 @@ docker compose ps
 3. Проверить в Airflow UI      # localhost:8080
 4. git add + commit + push     # Закоммитить
 5. Создать Pull Request        # На GitHub
-6. Code review                 # Ментор ревьюит
-7. Merge                       # После одобрения
+6. Code review                 # Ментор / лид ревьюит
+7. Merge                       # Вносим наш код в прод после апрува
 ```
 
 ---
