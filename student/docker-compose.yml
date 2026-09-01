@@ -13,8 +13,11 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
     AIRFLOW__WEBSERVER__SECRET_KEY: 'mentoring-secret-key-change-me'
-    # Connection to local mentoring database via PgBouncer
-    AIRFLOW__CONN__MENTORING_DB: postgresql://${POSTGRES_USER:-mentor_admin}:${POSTGRES_PASSWORD:-mentor_secret_2024}@pgbouncer:5432/${POSTGRES_DB:-mentoring_db}
+    # Connection to local mentoring database via PgBouncer.
+    # Формат имени важен: AIRFLOW_CONN_<ID> (одинарные подчёркивания) — так Airflow
+    # создаёт коннекшн из переменной окружения; в списке Connections в UI он не
+    # отображается, но DAG-и его видят.
+    AIRFLOW_CONN_MENTORING_DB: postgresql://${POSTGRES_USER:-mentor_admin}:${POSTGRES_PASSWORD:-mentor_secret_2024}@pgbouncer:5432/${POSTGRES_DB:-mentoring_db}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs

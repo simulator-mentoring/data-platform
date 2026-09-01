@@ -10,9 +10,14 @@
 
 ### 2. Клонируйте репозиторий
 ```bash
-git clone https://github.com/YOUR_ORG/bigtech-mentoring.git
-cd bigtech-mentoring/student
+git clone https://github.com/simulator-mentoring/data-platform.git
+cd data-platform/student
 ```
+
+**Windows**: все команды выполняй в терминале WSL — открой «Ubuntu» из меню
+Пуск (не PowerShell и не cmd). Клонируй в домашнюю папку WSL (`cd ~`), не на
+диск `C:\`. Если в WSL не находится `docker` — Docker Desktop → Settings →
+Resources → **WSL Integration** → включи для своего дистрибутива.
 
 ### 3. Запустите всё
 ```bash
@@ -146,3 +151,42 @@ docker compose restart superset   # Перезапустить тяжёлый с
 wsl --install
 # Перезагрузить компьютер
 ```
+
+### Airflow: DAG падает с «connection mentoring_db not defined»
+
+Коннекшн приходит из переменной окружения `AIRFLOW_CONN_MENTORING_DB` —
+в списке Connections в UI он **не отображается**, это нормально, DAG-и его видят.
+Если ошибка есть — у тебя старая версия проекта, обнови и пересоздай контейнеры:
+
+```bash
+git pull
+docker compose up -d --force-recreate
+```
+
+Ручной запасной вариант:
+
+```bash
+docker exec -it airflow-webserver airflow connections add 'mentoring_db' \
+    --conn-type 'postgres' \
+    --conn-host 'pgbouncer' \
+    --conn-schema 'mentoring_db' \
+    --conn-login 'mentor_admin' \
+    --conn-password 'mentor_secret_2024' \
+    --conn-port '5432'
+```
+
+### Superset не пускает по admin / admin
+
+Пересоздай админа вручную:
+
+```bash
+docker exec -it superset superset fab create-admin \
+    --username admin --firstname Admin --lastname User \
+    --email admin@example.com --password admin
+```
+
+### Скрипты падают с `\r: command not found` или `bad interpreter` (Windows)
+
+Git подменил переводы строк (CRLF). В репозитории стоит `.gitattributes`,
+который это предотвращает, — если клонировал старую версию, переклонируй проект
+и работай из WSL.

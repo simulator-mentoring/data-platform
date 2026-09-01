@@ -58,6 +58,11 @@ cp .env.example .env
 docker compose up -d
 ```
 
+**Windows**: все команды выполняй в терминале WSL — открой «Ubuntu» из меню
+Пуск (не PowerShell и не cmd), клонируй в домашнюю папку WSL (`cd ~`). Если
+в WSL не находится `docker` — Docker Desktop → Settings → Resources →
+**WSL Integration** → включи для своего дистрибутива.
+
 Первый запуск скачает образы (~5-10 минут). Подождите 2-3 минуты, затем проверьте:
 
 ```bash
@@ -156,6 +161,24 @@ lsof -i :8080  # или :8088, :5432
 docker compose down -v
 docker compose up -d
 # Подождите 2-3 минуты
+```
+
+### Airflow: DAG не видит connection `mentoring_db`
+
+Коннекшн приходит из переменной окружения и в списке Connections в UI
+не отображается — это нормально. Если DAG падает с «connection not defined» —
+обнови проект и пересоздай контейнеры:
+
+```bash
+git pull
+docker compose up -d --force-recreate
+```
+
+### Superset не пускает по admin / admin
+```bash
+docker exec -it superset superset fab create-admin \
+    --username admin --firstname Admin --lastname User \
+    --email admin@example.com --password admin
 ```
 
 ### "Not enough memory"

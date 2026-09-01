@@ -15,8 +15,10 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
     AIRFLOW__WEBSERVER__SECRET_KEY: 'mentoring-secret-key-change-me'
-    # Connection to remote server database
-    AIRFLOW__CONN__MENTORING_DB: postgresql://${REMOTE_DB_USER:-student}:${REMOTE_DB_PASSWORD:-student_password_CHANGE_ME}@${REMOTE_DB_HOST:-YOUR_SERVER_IP}:${REMOTE_DB_PORT:-6432}/${REMOTE_DB_NAME:-mentoring_db}
+    # Connection to remote server database.
+    # Формат имени важен: AIRFLOW_CONN_<ID> (одинарные подчёркивания) — так Airflow
+    # создаёт коннекшн из переменной окружения; в UI он не отображается, но DAG-и его видят.
+    AIRFLOW_CONN_MENTORING_DB: postgresql://${REMOTE_DB_USER:-student}:${REMOTE_DB_PASSWORD:-student_password_CHANGE_ME}@${REMOTE_DB_HOST:-YOUR_SERVER_IP}:${REMOTE_DB_PORT:-6432}/${REMOTE_DB_NAME:-mentoring_db}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
