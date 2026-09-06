@@ -60,9 +60,10 @@ SELECT
     -- Подсказка: COALESCE(AVG(...), 0)
     0 AS avg_order_amount
 
+-- Данные лежат за последние ~18 месяцев до вчерашнего дня включительно
 FROM generate_series(
-    '2024-06-01'::date,
-    '2026-01-31'::date,
+    CURRENT_DATE - 540,
+    CURRENT_DATE - 1,
     '1 day'::interval
 ) AS d(dt)
 

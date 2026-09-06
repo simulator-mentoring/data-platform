@@ -82,9 +82,9 @@ docker compose ps
 ## Данные
 
 В схеме `shared_data` три таблицы:
-- **users** (~10,000) — пользователи с country, signup_date, is_premium
-- **events** (~100,000) — действия: page_view, click, purchase, signup...
-- **orders** (~50,000) — заказы с amount, currency, status, product_category
+- **users** (10,000) — пользователи с country, signup_date, is_premium
+- **events** (~185,000) — действия воронкой: page_view → click → add_to_cart → checkout → purchase, плюс signup
+- **orders** (~7,000) — заказы с amount, currency, status, product_category; каждый порождён событием purchase
 
 Схема `sandbox` — для ваших таблиц (запись разрешена).
 
@@ -150,6 +150,19 @@ docker compose restart superset   # Перезапустить тяжёлый с
 ```powershell
 wsl --install
 # Перезагрузить компьютер
+```
+
+### Данные обновились, а у меня старые
+
+Учебные данные пересобраны: заказы теперь порождаются событиями `purchase`,
+конверсия различается по платформам, события идут после регистрации. Данные
+создаются один раз при первом запуске, поэтому для обновления нужен полный
+сброс (таблицы в `sandbox` при этом тоже удалятся):
+
+```bash
+git pull
+docker compose down -v
+docker compose up -d
 ```
 
 ### Airflow: DAG падает с «connection mentoring_db not defined»
