@@ -118,13 +118,13 @@ with DAG(
             revenue_daily AS (
                 SELECT order_date::date AS report_date, sum(amount)::DECIMAL(12,2) as total_revenue
                 FROM shared_data.orders
-                WHERE status = 'completed' AND order_date::date = (CURRENT_DATE - INTERVAL '1 day')::date
+                WHERE status = 'completed' AND order_date::date = (CURRENT_DATE - INTERVAL '1 day')::date and currency = "USD"
                 GROUP BY order_date::date
             ),
             avg_daily AS (
                 SELECT order_date::date AS report_date, AVG(amount)::DECIMAL(10,2) AS avg_order_amount
                 FROM shared_data.orders
-                WHERE order_date::date = (CURRENT_DATE - INTERVAL '1 day')::date
+                WHERE order_date::date = (CURRENT_DATE - INTERVAL '1 day')::date and currency = "USD"
                 GROUP BY order_date::date
             )
             SELECT
