@@ -145,9 +145,113 @@ ORDER BY avg_order DESC;
 
 ## Чек-лист выполнения
 
-- [ ] Задание 1: посмотрели данные, посчитали строки
-- [ ] Задание 2: пользователи по странам
-- [ ] Задание 3: топ-5 дней по заказам
-- [ ] Задание 4: revenue по месяцам
-- [ ] Задание 5: средний чек по странам (JOIN)
-- [ ] Задание 6: конверсия по платформам (CTE + JOIN)
+- [X] Задание 1: посмотрели данные, посчитали строки
+- [X] Задание 2: пользователи по странам
+- [X] Задание 3: топ-5 дней по заказам
+- [X] Задание 4: revenue по месяцам
+- [X] Задание 5: средний чек по странам (JOIN)
+- [X] Задание 6: конверсия по платформам (CTE + JOIN)
+
+task 2
+
+SELECT
+	country,
+	COUNT(*) AS count
+FROM
+	shared_data.users
+GROUP BY
+	country
+ORDER BY
+	count DESC;
+
+task 3
+
+
+SELECT
+	order_date::date AS date,
+	COUNT(DISTINCT order_id) AS orders_cnt
+FROM
+	shared_data.orders
+GROUP BY
+	order_date::date
+ORDER BY
+	orders_cnt DESC
+LIMIT 5;
+
+task 4
+
+
+SELECT
+	DATE_TRUNC('month', order_date)::date AS month,
+	ROUND(SUM(amount), 2) AS total_revenue
+FROM
+	shared_data.orders
+WHERE
+	status = 'completed'
+	AND currency = 'USD'
+GROUP BY
+	DATE_TRUNC('month', order_date)
+ORDER BY
+	month;
+
+
+task 5
+
+SELECT
+	u.country,
+	ROUND(AVG(o.amount), 2) AS avg_order
+FROM
+	shared_data.orders o
+JOIN
+	shared_data.users u
+	ON o.user_id = u.user_id
+WHERE
+	o.status = 'completed'
+	AND o.currency = 'USD'
+GROUP BY
+	u.country
+ORDER BY
+	avg_order DESC;
+
+task 6
+
+WITH ev AS (
+	SELECT
+		platform,
+		COUNT(DISTINCT user_id) AS users_events
+	FROM
+		shared_data.events
+	WHERE
+		platform IN ('web', 'ios', 'android')
+	GROUP BY
+		platform
+),
+ord AS (
+	SELECT
+		e.platform,
+		COUNT(DISTINCT o.user_id) AS users_orders
+	FROM
+		shared_data.orders o
+	INNER JOIN
+		shared_data.events e
+		ON e.user_id = o.user_id
+		AND e.event_type = 'purchase'
+		AND e.event_date = o.order_date
+	WHERE
+		e.platform IN ('web', 'ios', 'android')
+	GROUP BY
+		e.platform
+)
+SELECT
+	ev.platform,
+	ev.users_events,
+	COALESCE(ord.users_orders, 0) AS users_orders,
+	ROUND(
+		100.0 * COALESCE(ord.users_orders, 0) / NULLIF(ev.users_events, 0),
+	2) AS cr_pct
+FROM
+	ev
+LEFT JOIN
+	ord USING (platform)
+ORDER BY
+	cr_pct DESC;

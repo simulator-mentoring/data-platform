@@ -80,26 +80,49 @@ with DAG(
     # - avg_order_amount: AVG(amount) заказов за вчера
     # - Используйте ON CONFLICT для идемпотентности (повторный запуск обновляет данные)
 
+
+
     calculate_metrics = PostgresOperator(
         task_id="calculate_metrics",
         postgres_conn_id="mentoring_db",
         sql="""
-            -- TODO: Замените этот запрос на INSERT...SELECT
-            -- Пример структуры:
-            --
-            -- INSERT INTO sandbox.daily_metrics (
-            --     report_date, total_users, new_users,
-            --     total_events, total_orders, total_revenue, avg_order_amount
-            -- )
-            -- SELECT
-            --     (CURRENT_DATE - INTERVAL '1 day')::date,
-            --     ... ваши подзапросы ...
-            -- ON CONFLICT (report_date) DO UPDATE SET
-            --     total_users = EXCLUDED.total_users,
-            --     ...
-
-            SELECT 1;
-        """,
+            INSERT INTO sandbox.daily_metrics (
+                report_date, 
+                total_users,
+                new_users,
+                total_events,
+                total_orders,
+                total_revenue,
+                avg_order_amount
+            )
+            WITH unique_orders AS (
+                SELECT 
+                    DISTINCT ON (order_id) 
+                    order_id, status, amount
+                FROM 
+                    shared_data.orders
+                WHERE 
+                    order_date::date = CURRENT_DATE - 1
+                ORDER BY 
+                    order_id
+            )
+            SELECT 
+                CURRENT_DATE - 1 as report_date,
+                (SELECT COUNT(DISTINCT user_id ) FROM shared_data.users  WHERE signup_date::date <= CURRENT_DATE - 1),
+                (SELECT COUNT(DISTINCT user_id ) FROM shared_data.users  WHERE signup_date::date =  CURRENT_DATE - 1),
+                (SELECT COUNT(DISTINCT event_id) FROM shared_data.events WHERE event_date::date  =  CURRENT_DATE - 1),
+                (SELECT COUNT(*)    FROM unique_orders),
+                (SELECT SUM(amount) FROM unique_orders WHERE status = 'completed'),
+                (SELECT AVG(amount) FROM unique_orders)
+            ON CONFLICT (report_date)
+                DO UPDATE SET
+                    total_users      = EXCLUDED.total_users, 
+                    new_users        = EXCLUDED.new_users, 
+                    total_events     = EXCLUDED.total_events, 
+                    total_orders     = EXCLUDED.total_orders, 
+                    total_revenue    = EXCLUDED.total_revenue, 
+                    avg_order_amount = EXCLUDED.avg_order_amount
+            """;
     )
 
     # Task 3: Validate results
@@ -110,3 +133,4 @@ with DAG(
 
     # TODO: Задайте порядок выполнения задач
     # Подсказка: create_table >> calculate_metrics >> validate
+    create_table >> calculate_metrics >> validate

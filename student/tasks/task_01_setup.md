@@ -116,8 +116,8 @@ docker compose ps
 
 ## Чек-лист выполнения
 
-- [ ] Docker Desktop установлен и запущен
-- [ ] `docker compose ps` — все контейнеры healthy/up
-- [ ] DataGrip/DBeaver подключен к БД, видны таблицы в shared_data
-- [ ] Airflow открывается, example DAG запустился успешно
-- [ ] Superset открывается
+- [X] Docker Desktop установлен и запущен
+- [X] `docker compose ps` — все контейнеры healthy/up
+- [X] DataGrip/DBeaver подключен к БД, видны таблицы в shared_data
+- [X] Airflow открывается, example DAG запустился успешно
+- [X] Superset открывается
