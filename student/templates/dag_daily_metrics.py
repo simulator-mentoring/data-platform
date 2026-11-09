@@ -84,23 +84,33 @@ with DAG(
         task_id="calculate_metrics",
         postgres_conn_id="mentoring_db",
         sql="""
-            -- TODO: Замените этот запрос на INSERT...SELECT
-            -- Пример структуры:
-            --
-            -- INSERT INTO sandbox.daily_metrics (
-            --     report_date, total_users, new_users,
-            --     total_events, total_orders, total_revenue, avg_order_amount
-            -- )
-            -- SELECT
-            --     (CURRENT_DATE - INTERVAL '1 day')::date,
-            --     ... ваши подзапросы ...
-            -- ON CONFLICT (report_date) DO UPDATE SET
-            --     total_users = EXCLUDED.total_users,
-            --     ...
-
-            SELECT 1;
-        """,
+            
+    insert into sandbox.daily_metrics (report_date,
+        total_users,
+        new_users,
+        total_events,
+        total_orders,
+        total_revenue,
+        avg_order_amount
     )
+    SELECT
+    (CURRENT_DATE - INTERVAL '1 day')::date,
+    (select count(*) FROM shared_data.users WHERE signup_date <= (CURRENT_DATE - INTERVAL '1 day')) AS total_users,
+    (select count(*) from shared_data.users where signup_date =(CURRENT_DATE - INTERVAL '1 day')) AS new_users,
+    (select count(*) from shared_data.events where event_date::date = (CURRENT_DATE - INTERVAL '1 day')) AS total_events,
+    (select count(*) from shared_data.orders where order_date::date = (CURRENT_DATE - INTERVAL '1 day') and status  = 'completed') AS total_orders,
+    (select COALESCE(SUM(amount), 0) from shared_data.orders WHERE  order_date::date = (CURRENT_DATE - INTERVAL '1 day') and status = 'completed') AS total_revenue,
+    (select coalesce(avg(amount),0) from shared_data.orders WHERE status = 'completed' AND order_date::date = (CURRENT_DATE - INTERVAL '1 day')) AS avg_order_amount
+    ON CONFLICT (report_date) DO UPDATE SET
+        total_users = EXCLUDED.total_users,
+        new_users = EXCLUDED.new_users,
+        total_events = EXCLUDED.total_events,
+        total_orders = EXCLUDED.total_orders,
+        total_revenue = EXCLUDED.total_revenue,
+        avg_order_amount = EXCLUDED.avg_order_amount,
+        created_at = NOW();
+            """,
+        )
 
     # Task 3: Validate results
     validate = PythonOperator(
@@ -109,4 +119,4 @@ with DAG(
     )
 
     # TODO: Задайте порядок выполнения задач
-    # Подсказка: create_table >> calculate_metrics >> validate
+    create_table >> calculate_metrics >> validate
